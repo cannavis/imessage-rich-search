@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "imessage-rich-search"
-version = "0.1.0"
+version = "0.2.0"
 description = "Full-text search across macOS iMessages including link-preview metadata that Messages.app indexes but chat.db's raw text column doesn't surface."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -28,11 +28,14 @@ classifiers = [
     "Topic :: Database",
     "Topic :: Utilities",
 ]
-# Core CLI has zero runtime dependencies — uses stdlib only (sqlite3, plistlib).
+# Zero runtime dependencies for both CLI and MCP server — stdlib only.
+# This is intentional: macOS TCC propagates Full Disk Access from Claude.app
+# to Apple-signed children only. /usr/bin/python3 is Apple-signed; Homebrew
+# python is not. Keeping deps empty lets the package install cleanly against
+# system Python.
 dependencies = []
 
 [project.optional-dependencies]
-mcp = ["mcp>=1.2"]
 dev = ["ruff>=0.6"]
 
 [project.scripts]

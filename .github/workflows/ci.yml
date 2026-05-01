@@ -47,10 +47,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install with MCP extra
+          python-version: "3.9"
+      - name: Install (no extras — stdlib only)
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[mcp]"
+          pip install -e .
       - name: Import MCP server module
-        run: python -c "from imessage_rich_search import mcp_server; print(mcp_server.mcp.name)"
+        run: python -c "from imessage_rich_search import mcp_server; print(mcp_server.SERVER_NAME)"
+      - name: Smoke-test JSON-RPC handshake
+        run: |
+          printf '%s\n%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | imessage-rich-search-mcp \
+            | python -c "import sys,json; lines=[l for l in sys.stdin if l.strip()]; assert json.loads(lines[0])['result']['serverInfo']['name']=='imessage-rich-search'; assert json.loads(lines[1])['result']['tools'][0]['name']=='search_imessages_rich'; print('handshake OK')"

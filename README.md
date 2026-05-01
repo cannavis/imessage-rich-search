@@ -46,7 +46,7 @@ So if a friend sent you `https://x.com/foo/status/123` and the preview card said
 |---|---|
 | **OS** | macOS 11 Big Sur or newer (tested through macOS 26) |
 | **Architecture** | Apple Silicon (arm64) or Intel (x86_64) |
-| **Python** | 3.9+ for the CLI · 3.10+ for the optional MCP server |
+| **Python** | 3.9+ (system `/usr/bin/python3` works — and is required for the MCP server, see [Install](#install)) |
 | **Disk** | Negligible (~50 KB installed) |
 | **Permissions** | **Full Disk Access** for the terminal/app that runs the script |
 
@@ -54,7 +54,7 @@ The `chat.db` schema fields it relies on (`text`, `payload_data`, `balloon_bundl
 
 ## Install
 
-### Option A — `pipx` (recommended)
+### Option A — `pipx` (recommended, **system Python required for MCP server**)
 
 `pipx` isolates the tool in its own venv. Install pipx first if needed:
 
@@ -63,23 +63,25 @@ brew install pipx
 pipx ensurepath
 ```
 
-Then install this tool from GitHub:
+Then install this tool from GitHub. **Use `/usr/bin/python3` explicitly** — this matters for the MCP server because macOS only propagates Full Disk Access from Claude.app to Apple-signed child processes. Homebrew Python is third-party signed; system `/usr/bin/python3` is Apple-signed and inherits cleanly. If you don't care about the MCP server (CLI only), any Python 3.9+ works.
 
 ```bash
-# CLI only
-pipx install "git+https://github.com/cannavis/imessage-rich-search"
-
-# CLI + MCP server (requires Python 3.10+)
-pipx install --python python3.14 "imessage-rich-search[mcp] @ git+https://github.com/cannavis/imessage-rich-search"
+pipx install --python /usr/bin/python3 "git+https://github.com/cannavis/imessage-rich-search"
 ```
+
+This installs three commands on your PATH (under `~/.local/bin`):
+
+- `imessage-rich-search` — the CLI
+- `imrs` — a short alias for the CLI
+- `imessage-rich-search-mcp` — the MCP server
 
 ### Option B — `pip` into a venv
 
 ```bash
 git clone https://github.com/cannavis/imessage-rich-search
 cd imessage-rich-search
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[mcp]"
+/usr/bin/python3 -m venv .venv && source .venv/bin/activate
+pip install -e .
 ```
 
 ### Option C — single-file, no install
@@ -142,7 +144,7 @@ python3 -m imessage_rich_search "obsidian"
 
 Lets Claude Desktop call the search directly during conversations.
 
-1. Install with the `mcp` extra (see Option A above with `[mcp]`)
+1. Install the package using **system Python** (Option A above with `--python /usr/bin/python3`). This is required: macOS Full Disk Access only propagates from Claude.app to **Apple-signed** subprocesses. `/usr/bin/python3` is Apple-signed; Homebrew / pyenv / asdf-installed Pythons are not, and will be silently denied by `tccd`.
 2. Find the entry-point absolute path: `which imessage-rich-search-mcp`
 3. Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -156,10 +158,20 @@ Lets Claude Desktop call the search directly during conversations.
    }
    ```
 
-4. Make sure **Claude.app** has Full Disk Access (System Settings → Privacy & Security)
-5. **Quit and relaunch** Claude Desktop fully
+4. Confirm Claude.app already has Full Disk Access (it does by default once you grant it once — verify in System Settings → Privacy & Security → Full Disk Access)
+5. **Quit and relaunch** Claude Desktop fully (⌘Q)
 
 Claude can now call `search_imessages_rich(query, contact?, limit?)` as a tool.
+
+### Verifying the TCC inheritance is working
+
+If the MCP server returns "unable to open database file" inside Claude Desktop, the spawn-attribution chain is broken. Check macOS's TCC daemon log:
+
+```bash
+log show --predicate 'process == "tccd"' --last 5m | grep -iE "imessage-rich|chat\.db|SystemPolicyAllFiles"
+```
+
+A working install shows the request being **allowed**. A broken install shows `responsible_path=` pointing at a non-Apple-signed Python binary, followed by `recording denied`. Reinstall with `pipx install --python /usr/bin/python3 ...` to fix.
 
 ## How it works
 
@@ -203,7 +215,8 @@ The "walk strings out of $objects" trick avoids needing `ccl_bplist`, `pyobjc`, 
 |---|---|
 | `unable to open database file` / `cannot open chat.db` | Full Disk Access not granted to the running app. Add app, then ⌘Q + relaunch. |
 | Returns 0 matches but Messages.app finds them | Wrong `--contact` format (must match the `handle.id` in `chat.db` — typically `+1XXXXXXXXXX` or full email). Run without `--contact` to confirm. |
-| `No module named 'mcp'` when starting the MCP server | Install with the extra: `pipx install "imessage-rich-search[mcp] @ git+..."` |
+| `unable to open database file` from Claude Desktop's MCP call (but CLI works fine) | TCC denied the spawned Python. Reinstall with system Python: `pipx reinstall --python /usr/bin/python3 imessage-rich-search`. See the [TCC verification section](#verifying-the-tcc-inheritance-is-working). |
+| `No module named 'imessage_rich_search'` when starting the MCP server | Reinstall with `pipx install --python /usr/bin/python3 "git+https://github.com/cannavis/imessage-rich-search"` |
 | Claude Desktop doesn't see the tool | Verify JSON syntax in `claude_desktop_config.json`, fully quit Claude (⌘Q), relaunch. |
 | Search is slow on huge databases | The current implementation does a linear scan + bplist parse per row. For 100k+ message DBs, expect a few seconds. An FTS5 virtual-table backed index is on the roadmap. |
 
