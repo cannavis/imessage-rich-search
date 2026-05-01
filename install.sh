@@ -10,10 +10,13 @@ VENV_DIR="${HOME}/.local/share/imessage-rich-search"
 BIN_DIR="${HOME}/.local/bin"
 APPLE_PY="/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9"
 
-step() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
-ok()   { printf '\033[1;32m✓\033[0m %s\n'   "$*"; }
-warn() { printf '\033[1;33m!\033[0m %s\n'   "$*" >&2; }
-die()  { printf '\033[1;31m✗\033[0m %s\n'   "$*" >&2; exit 1; }
+# Color helpers
+B=$'\033[1m'; D=$'\033[2m'; G=$'\033[1;32m'; R=$'\033[1;31m'; Y=$'\033[1;33m'; BL=$'\033[1;34m'; X=$'\033[0m'
+
+step() { printf '%s==>%s %s\n' "$BL" "$X" "$*"; }
+ok()   { printf '%s✓%s %s\n'   "$G"  "$X" "$*"; }
+warn() { printf '%s!%s %s\n'   "$Y"  "$X" "$*" >&2; }
+die()  { printf '%s✗%s %s\n'   "$R"  "$X" "$*" >&2; exit 1; }
 
 # 1. Sanity checks
 [[ "$(uname)" == "Darwin" ]] || die "macOS only — detected $(uname)."
@@ -24,8 +27,7 @@ if ! /usr/bin/xcode-select -p &>/dev/null; then
   warn "Then re-run this installer."
   exit 1
 fi
-[[ -x "$APPLE_PY" ]] || die "Apple's Python 3.9 not found at:
-  $APPLE_PY
+[[ -x "$APPLE_PY" ]] || die "Apple's Python 3.9 not found at: $APPLE_PY
 Try: xcode-select --install   (or reinstall Command Line Tools)"
 ok "Found $APPLE_PY"
 
@@ -48,43 +50,40 @@ for exe in imessage-rich-search imrs imessage-rich-search-mcp; do
 done
 ok "Symlinks: imessage-rich-search, imrs, imessage-rich-search-mcp"
 
-# 4. Tell the user exactly what's next
-cat <<EOF
-
-────────────────────────────────────────────────────────────────────────
-$(printf '\033[1;32mInstalled.\033[0m')  Two manual steps remain:
-────────────────────────────────────────────────────────────────────────
-
-$(printf '\033[1mSTEP 1 — Grant Full Disk Access to Apple's Python 3.9\033[0m')
-
-    System Settings → Privacy & Security → Full Disk Access
-    Click [+], press ⌘⇧G, paste this path, hit Return:
-
-        $APPLE_PY
-
-    Select python3.9, click Open, toggle ON.
-
-$(printf '\033[1mSTEP 2 — Add the MCP server to Claude Desktop\033[0m')
-
-    Edit:  ~/Library/Application Support/Claude/claude_desktop_config.json
-
-    Add this to the top-level JSON (merge into existing "mcpServers" if
-    you already have one):
-
-        "mcpServers": {
-          "imessage-rich-search": {
-            "command": "$BIN_DIR/imessage-rich-search-mcp"
-          }
-        }
-
-$(printf '\033[1mSTEP 3 — Restart Claude Desktop\033[0m')
-
-    ⌘Q (full quit, not just close-window) and relaunch.
-
-────────────────────────────────────────────────────────────────────────
-$(printf '\033[2mVerify CLI works now (does not need step 1 or 2):\033[0m')
-    $BIN_DIR/imrs "obsidian" --limit 3
-$(printf '\033[2mUninstall:\033[0m')
-    rm -rf $VENV_DIR && rm -f $BIN_DIR/{imessage-rich-search,imrs,imessage-rich-search-mcp}
-────────────────────────────────────────────────────────────────────────
-EOF
+# 4. Print post-install instructions (printf-only, no heredoc-substitution traps)
+echo
+echo "────────────────────────────────────────────────────────────────────────"
+printf '%sInstalled.%s  Three manual steps remain:\n' "$G" "$X"
+echo "────────────────────────────────────────────────────────────────────────"
+echo
+printf '%sSTEP 1 — Grant Full Disk Access to Apple'\''s Python 3.9%s\n' "$B" "$X"
+echo
+echo "    System Settings → Privacy & Security → Full Disk Access"
+echo "    Click [+], press ⌘⇧G, paste this path, hit Return:"
+echo
+echo "        $APPLE_PY"
+echo
+echo "    Select python3.9, click Open, toggle ON."
+echo
+printf '%sSTEP 2 — Add the MCP server to Claude Desktop%s\n' "$B" "$X"
+echo
+echo "    Edit:  ~/Library/Application Support/Claude/claude_desktop_config.json"
+echo
+echo "    Merge this into the top-level JSON (preserve any existing keys):"
+echo
+echo '        "mcpServers": {'
+echo '          "imessage-rich-search": {'
+printf  '            "command": "%s/imessage-rich-search-mcp"\n' "$BIN_DIR"
+echo '          }'
+echo '        }'
+echo
+printf '%sSTEP 3 — Restart Claude Desktop%s\n' "$B" "$X"
+echo
+echo "    ⌘Q (full quit, not just close-window) and relaunch."
+echo
+echo "────────────────────────────────────────────────────────────────────────"
+printf '%sVerify CLI works now (does not need step 1 or 2):%s\n' "$D" "$X"
+printf '    %s/imrs "obsidian" --limit 3\n' "$BIN_DIR"
+printf '%sUninstall:%s\n' "$D" "$X"
+printf '    rm -rf %s && rm -f %s/{imessage-rich-search,imrs,imessage-rich-search-mcp}\n' "$VENV_DIR" "$BIN_DIR"
+echo "────────────────────────────────────────────────────────────────────────"
