@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an enhancement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the problem?
+      description: What can't you do today, or what's painful?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: A concrete sketch — flag name, behavior, output format, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: I've read the "What it is — and isn't" section and confirmed this is in scope
+          required: true
+        - label: This wouldn't add a new runtime dependency to the core CLI (or, if it does, I propose putting it behind an optional `[extra]`)

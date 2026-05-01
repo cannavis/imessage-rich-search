@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "imessage-rich-search"
+version = "0.1.0"
+description = "Full-text search across macOS iMessages including link-preview metadata that Messages.app indexes but chat.db's raw text column doesn't surface."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "cannavis" }]
+keywords = ["imessage", "macos", "search", "chat.db", "mcp", "link-preview", "claude"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Communications :: Chat",
+    "Topic :: Database",
+    "Topic :: Utilities",
+]
+# Core CLI has zero runtime dependencies — uses stdlib only (sqlite3, plistlib).
+dependencies = []
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.2"]
+dev = ["ruff>=0.6"]
+
+[project.scripts]
+imessage-rich-search = "imessage_rich_search.cli:main"
+imrs = "imessage_rich_search.cli:main"
+imessage-rich-search-mcp = "imessage_rich_search.mcp_server:main"
+
+[project.urls]
+Homepage = "https://github.com/cannavis/imessage-rich-search"
+Issues = "https://github.com/cannavis/imessage-rich-search/issues"
+Changelog = "https://github.com/cannavis/imessage-rich-search/blob/main/CHANGELOG.md"
+Source = "https://github.com/cannavis/imessage-rich-search"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/imessage_rich_search"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]

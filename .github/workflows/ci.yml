@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-build:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Compile-check all modules
+        run: python -m compileall -q src
+
+      - name: Smoke-test CLI help
+        run: |
+          imessage-rich-search --help
+          imrs --help
+
+  build-mcp:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install with MCP extra
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[mcp]"
+      - name: Import MCP server module
+        run: python -c "from imessage_rich_search import mcp_server; print(mcp_server.mcp.name)"

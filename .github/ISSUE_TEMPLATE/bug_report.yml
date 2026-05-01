@@ -1,0 +1,57 @@
+name: Bug report
+description: Something isn't working as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. **Do not paste real chat content** — redact phone numbers, names, and message bodies before submitting.
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "26.4.1 (run `sw_vers`)"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.13.1 (run `python3 --version`)"
+    validations:
+      required: true
+  - type: input
+    id: tool
+    attributes:
+      label: Tool version
+      placeholder: "0.1.0 (in pyproject.toml or `pip show imessage-rich-search`)"
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact command run
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened (with phone numbers / names / message text REDACTED)
+    validations:
+      required: true
+  - type: checkboxes
+    id: fda
+    attributes:
+      label: Sanity checks
+      options:
+        - label: I granted Full Disk Access to the app running this tool, then fully quit and relaunched it
+          required: true
+        - label: I redacted personal data from any pasted output
+          required: true
